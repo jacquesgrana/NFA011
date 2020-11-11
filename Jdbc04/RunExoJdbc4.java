@@ -12,6 +12,7 @@ public class RunExoJdbc4 {
 	// *************************** identifiants de connection en local au serveur postgresql
 	private final static String urlConnectionDebut = "jdbc:postgresql://";
 	private final static String urlConnectionFin = "/comptedbtest";
+	// private final static String urlConnectionFin = "/comptesdb";
 	private final static String userConnection = "lambda";
 	private final static String passwordConnection = "toto";
 	// **************************************************************************************
@@ -60,6 +61,8 @@ public class RunExoJdbc4 {
 		while ((entierSaisi < 1) || (entierSaisi > 3) || !quitter);
 		ToolsForFormatting.PrintByeBye();
 	}
+	
+	
 
 	private static void executeRequete(String maRequete, String monIp, String monUrl) {
 		int numeroTuple = 0, nombreColonne = 0;
@@ -91,53 +94,19 @@ public class RunExoJdbc4 {
 					String[] tableauNomColonne = new String[nombreColonne];
 					ArrayList<String[]> listeTableauValeur = new ArrayList<String[]>();
 
-					// boucle pour mettre les max à la longueur du nom de la colonne
-					for (int i=0; i<nombreColonne; i++) {
-						tableauNomColonne[i] = metaData.getColumnName(i+1);
-						tableauMax[i] = tableauNomColonne[i].length();					
-					}
-
-					// boucles pour récupérer les longueurs max des strings pour chaque colonne --> dans tableau + affectation de l'arrayList contenant les valeurs
-					while (resultat.next()) {
-						String[] monTuple = new String[nombreColonne];
-						for (int i=0; i<nombreColonne; i++) {
-							if (resultat.getString(tableauNomColonne[i]) != null) {
-								if (resultat.getString(tableauNomColonne[i]).length() > tableauMax[i]) {
-									tableauMax[i] = resultat.getString(tableauNomColonne[i]).length();
-								}
-								monTuple[i] = resultat.getString(tableauNomColonne[i]);
-							}
-						}
-						listeTableauValeur.add(monTuple);	
-					}
-
-					// affichage du haut du tableau avec les noms de colonnes
+					peuplementTableaux(nombreColonne, metaData, resultat, tableauMax, tableauNomColonne, listeTableauValeur);
+					
 					afficheLigneTrait(tableauMax, nombreColonne);
-					AlignLeft(6, "| n°");
-					for (int i=0; i<nombreColonne; i++) {
-
-						AlignLeft(tableauMax[i] + 4, "| " + tableauNomColonne[i]);
-
-					}
-					AlignLeft(1, "|");
-					System.out.println();
+					afficheHautTableau(nombreColonne, tableauMax, tableauNomColonne);
 					afficheLigneTrait(tableauMax, nombreColonne);
-
-					// boucles d'affichage des valeurs
-					for(int j=0; j<listeTableauValeur.size(); j++) {
-						AlignLeft(6, "| " + (j+1));
-						for (int i=0; i<nombreColonne; i++) {
-							AlignLeft(tableauMax[i] + 4, "| " + listeTableauValeur.get(j)[i]);
-						}
-						AlignLeft(1, "|");
-						System.out.println();
-					}
+					afficheValeurs(nombreColonne, tableauMax, listeTableauValeur);
 					afficheLigneTrait(tableauMax, nombreColonne);
 					System.out.println();
 				}
 
 			}
-			// sinon, requete de type update, insert ou delete
+			
+			// sinon, requête de type update, insert ou delete
 			else {
 				int retourRequete = statement.executeUpdate(maRequete);
 				System.out.println("Retour de la requête : " + retourRequete + " [nombre de tuple(s) affecté(s) par la requête]");
@@ -153,6 +122,58 @@ public class RunExoJdbc4 {
 			System.out.println();
 		}
 		ToolsForFormatting.PressEnterKey();
+	}
+
+
+
+	public static void afficheHautTableau(int monNombreColonne, int[] monTableauMax, String[] monTableauNomColonne) {
+		// affichage du haut du tableau avec les noms de colonnes
+		AlignLeft(6, "| n°");
+		for (int i=0; i<monNombreColonne; i++) {
+			AlignLeft(monTableauMax[i] + 4, "| " + monTableauNomColonne[i]);
+		}
+		AlignLeft(1, "|");
+		System.out.println();
+	}
+
+
+
+	public static void peuplementTableaux(int monNombreColonne, ResultSetMetaData mesMetaData, ResultSet monResultat,
+			int[] monTableauMax, String[] monTableauNomColonne, ArrayList<String[]> maListeTableauValeur) throws SQLException {
+		
+		// boucle pour mettre les max à la longueur du nom de la colonne
+		for (int i=0; i<monNombreColonne; i++) {
+			monTableauNomColonne[i] = mesMetaData.getColumnName(i+1);
+			monTableauMax[i] = monTableauNomColonne[i].length();					
+		}
+
+		// boucles pour récupérer les longueurs max des strings pour chaque colonne --> dans tableau + affectation de l'arrayList contenant les valeurs
+		while (monResultat.next()) {
+			String[] monTuple = new String[monNombreColonne];
+			for (int i=0; i<monNombreColonne; i++) {
+				if (monResultat.getString(monTableauNomColonne[i]) != null) {
+					if (monResultat.getString(monTableauNomColonne[i]).length() > monTableauMax[i]) {
+						monTableauMax[i] = monResultat.getString(monTableauNomColonne[i]).length();
+					}
+					monTuple[i] = monResultat.getString(monTableauNomColonne[i]);
+				}
+			}
+			maListeTableauValeur.add(monTuple);	
+		}
+	}
+
+
+
+	public static void afficheValeurs(int monNombreColonne, int[] monTableauMax, ArrayList<String[]> maListeTableauValeur) {
+		// boucles d'affichage des valeurs
+		for(int j=0; j<maListeTableauValeur.size(); j++) {
+			AlignLeft(6, "| " + (j+1));
+			for (int i=0; i<monNombreColonne; i++) {
+				AlignLeft(monTableauMax[i] + 4, "| " + maListeTableauValeur.get(j)[i]);
+			}
+			AlignLeft(1, "|");
+			System.out.println();
+		}
 	}
 
 	// fonction qui affiche un trait composé de '-' et '+'
@@ -177,14 +198,14 @@ public class RunExoJdbc4 {
 	}
 
 	// fonction qui vérifie que la requête commence par la String 'aTester'
-	private static boolean isRequeteOk(String maRequeteSelect, String aTester) {
+	private static boolean isRequeteOk(String maRequete, String aTester) {
 		boolean isOk = false;
-		if (maRequeteSelect.length() >=  aTester.length()) {
-			if (maRequeteSelect.substring(0,6).toUpperCase().equals(aTester)) {
+		int maLongueur = aTester.length();
+		if (maRequete.length() >=  maLongueur) {
+			if (maRequete.substring(0, maLongueur).toUpperCase().equals(aTester)) {
 				isOk = true;
 			}
 		}
-
 		return isOk;
 	}
 
